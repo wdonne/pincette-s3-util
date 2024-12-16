@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>net.pincette</groupId>
+  <artifactId>pincette-s3-util</artifactId>
+  <packaging>jar</packaging>
+  <version>1.0.0</version>
+  <name>pincette-s3-util</name>
+  <description>General utilities</description>
+  <url>https://github.com/wdonne/pincette-s3-util</url>
+
+  <organization>
+    <name>Pincette</name>
+    <url>https://pincette.net</url>
+  </organization>
+
+  <scm>
+    <url>https://github.com/wdonne/pincette-s3-util</url>
+    <connection>scm:git@github.com:wdonne/pincette-s3-util.git</connection>
+    <developerConnection>scm:git@github.com:wdonne/pincette-s3-util.git</developerConnection>
+  </scm>
+
+  <developers>
+    <developer>
+      <id>wdonne</id>
+      <name>Werner Donné</name>
+      <email>werner.donne@pincette.net</email>
+      <url>https://pincette.net</url>
+      <organization>Pincette</organization>
+      <organizationUrl>https://pincette.net</organizationUrl>
+    </developer>
+  </developers>
+
+  <licenses>
+    <license>
+      <name>BSD-style</name>
+      <url>http://www.opensource.org/licenses/bsd-license.php</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <properties>
+    <maven.compiler.target>17</maven.compiler.target>
+    <maven.compiler.source>17</maven.compiler.source>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>software.amazon.awssdk</groupId>
+        <artifactId>bom</artifactId>
+        <version>2.29.34</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>net.pincette</groupId>
+      <artifactId>pincette-common</artifactId>
+      <version>2.5.0</version>
+    </dependency>
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>s3</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>nexus-staging-maven-plugin</artifactId>
+        <version>1.7.0</version>
+        <extensions>true</extensions>
+        <configuration>
+          <serverId>ossrh</serverId>
+          <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+          <autoReleaseAfterClose>false</autoReleaseAfterClose>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-gpg-plugin</artifactId>
+        <version>3.2.4</version>
+        <executions>
+          <execution>
+            <id>sign-artifacts</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>sign</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>3.11.1</version>
+        <configuration>
+          <additionalJOptions>
+            <additionalJOption>-J-Dhttp.agent=maven-javadoc-plugin-${project.name}
+            </additionalJOption>
+          </additionalJOptions>
+          <links>
+            <link>https://docs.oracle.com/en/java/javase/17/docs/api/</link>
+            <link>https://www.javadoc.io/doc/software.amazon.awssdk/s3/latest/</link>
+          </links>
+          <sourceFileExcludes>
+            <sourceFileExclude>**/module-info.java</sourceFileExclude>
+          </sourceFileExcludes>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
