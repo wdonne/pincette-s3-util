@@ -1,7 +1,20 @@
 package net.pincette.s3.util;
 
+import static java.nio.channels.FileChannel.open;
+import static java.nio.file.Files.createTempFile;
+import static java.nio.file.Files.delete;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.SYNC;
+import static java.nio.file.StandardOpenOption.WRITE;
+import static java.util.concurrent.CompletableFuture.completedFuture;
+import static net.pincette.rs.Chain.with;
+import static net.pincette.rs.ReadableByteChannelPublisher.readableByteChannel;
+import static net.pincette.rs.Util.onComplete;
+import static net.pincette.rs.Util.onCompleteProcessor;
+import static net.pincette.rs.WritableByteChannelSubscriber.writableByteChannel;
 import static net.pincette.util.Collections.list;
 import static net.pincette.util.Pair.pair;
+import static net.pincette.util.Util.tryToGetRethrow;
 import static org.reactivestreams.FlowAdapters.toFlowPublisher;
 import static org.reactivestreams.FlowAdapters.toPublisher;
 import static software.amazon.awssdk.core.async.AsyncRequestBody.empty;
@@ -12,9 +25,12 @@ import static software.amazon.awssdk.services.s3.model.MetadataDirective.REPLACE
 
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow.Publisher;
+import net.pincette.rs.Fanout;
 import net.pincette.util.Pair;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.core.async.SdkPublisher;
@@ -80,6 +96,10 @@ public class Util {
     return DeleteObjectRequest.builder().bucket(bucket).key(key).build();
   }
 
+  private static Pair<Long, Publisher<ByteBuffer>> failedBody() {
+    return pair(-1L, net.pincette.rs.Util.empty());
+  }
+
   public static CompletionStage<HeadObjectResponse> headObject(
       final String bucket, final String key) {
     return headObject(headObjectRequest(bucket, key));
@@ -115,12 +135,46 @@ public class Util {
       final String contentType,
       final long contentLength,
       final Publisher<ByteBuffer> content) {
-    return putObject(putObjectRequest(bucket, key, contentType, contentLength), content);
+    return Optional.of(contentLength)
+        .filter(l -> l == -1)
+        .map(l -> putObjectTemporarily(content))
+        .orElseGet(() -> completedFuture(pair(contentLength, content)))
+        .thenComposeAsync(
+            pair -> putObject(putObjectRequest(bucket, key, contentType, pair.first), pair.second));
   }
 
   public static CompletionStage<PutObjectResponse> putObject(
       final PutObjectRequest request, final Publisher<ByteBuffer> content) {
     return client.putObject(request, fromPublisher(toPublisher(content)));
+  }
+
+  private static CompletionStage<Pair<Long, Publisher<ByteBuffer>>> putObjectTemporarily(
+      final Publisher<ByteBuffer> content) {
+    final CompletableFuture<Void> future = new CompletableFuture<>();
+
+    return tryToGetRethrow(() -> createTempFile(UUID.randomUUID().toString(), ".tmp"))
+        .flatMap(
+            path ->
+                tryToGetRethrow(() -> open(path, WRITE, SYNC)).map(channel -> pair(path, channel)))
+        .map(
+            pair -> {
+              content.subscribe(
+                  Fanout.of(
+                      writableByteChannel(pair.second), onComplete(() -> future.complete(null))));
+
+              return (CompletionStage<Pair<Long, Publisher<ByteBuffer>>>)
+                  future.thenApply(
+                      v ->
+                          tryToGetRethrow(() -> open(pair.first, READ))
+                              .map(
+                                  channel ->
+                                      with(readableByteChannel(channel))
+                                          .map(onCompleteProcessor(() -> delete(pair.first)))
+                                          .get())
+                              .map(publisher -> pair(pair.first.toFile().length(), publisher))
+                              .orElseGet(Util::failedBody));
+            })
+        .orElseGet(() -> completedFuture(failedBody()));
   }
 
   public static PutObjectRequest putObjectRequest(
