@@ -42,6 +42,8 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
+import software.amazon.awssdk.services.s3.model.ListObjectVersionsRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectVersionsResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
@@ -127,6 +129,21 @@ public class Util {
 
   public static GetObjectRequest getObjectRequest(final String bucket, final String key) {
     return GetObjectRequest.builder().bucket(bucket).key(key).build();
+  }
+
+  public static CompletionStage<ListObjectVersionsResponse> listObjectVersions(
+      final String bucket, final String key) {
+    return listObjectVersions(listObjectVersionsRequest(bucket, key));
+  }
+
+  public static CompletionStage<ListObjectVersionsResponse> listObjectVersions(
+      final ListObjectVersionsRequest request) {
+    return client.listObjectVersions(request);
+  }
+
+  public static ListObjectVersionsRequest listObjectVersionsRequest(
+      final String bucket, final String key) {
+    return ListObjectVersionsRequest.builder().bucket(bucket).prefix(key).build();
   }
 
   public static CompletionStage<PutObjectResponse> putObject(

@@ -7,7 +7,7 @@
   <groupId>net.pincette</groupId>
   <artifactId>pincette-s3-util</artifactId>
   <packaging>jar</packaging>
-  <version>1.0.4</version>
+  <version>1.1.0</version>
   <name>pincette-s3-util</name>
   <description>General utilities</description>
   <url>https://github.com/wdonne/pincette-s3-util</url>
@@ -37,7 +37,7 @@
   <licenses>
     <license>
       <name>BSD-style</name>
-      <url>http://www.opensource.org/licenses/bsd-license.php</url>
+      <url>https://www.opensource.org/licenses/bsd-license.php</url>
       <distribution>repo</distribution>
     </license>
   </licenses>
