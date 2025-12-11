@@ -20,10 +20,10 @@ import static org.reactivestreams.FlowAdapters.toPublisher;
 import static software.amazon.awssdk.core.async.AsyncRequestBody.empty;
 import static software.amazon.awssdk.core.async.AsyncRequestBody.fromPublisher;
 import static software.amazon.awssdk.core.async.SdkPublisher.fromIterable;
-import static software.amazon.awssdk.services.s3.S3AsyncClient.create;
 import static software.amazon.awssdk.services.s3.model.MetadataDirective.REPLACE;
 
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -51,7 +51,10 @@ import software.amazon.awssdk.services.s3.model.PutObjectResponse;
  * @author Werner Donné
  */
 public class Util {
-  private static final S3AsyncClient client = create();
+  private static final S3AsyncClient client =
+      S3AsyncClient.builder()
+          .overrideConfiguration(c -> c.apiCallTimeout(Duration.ofMinutes(5)))
+          .build();
 
   private Util() {}
 
